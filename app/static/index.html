@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wall Finishing Robot - Simple Control</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.4;
+        }
+        
+        .container {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            height: 100vh;
+            gap: 10px;
+            padding: 10px;
+        }
+        
+        .sidebar {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow-y: auto;
+        }
+        
+        .main-content {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            text-align: center;
+            background: #ecf0f1;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        
+        h2 {
+            color: #34495e;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 5px;
+        }
+        
+        .section {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .section:last-child { border-bottom: none; }
+        
+        label {
+            display: block;
+            margin: 10px 0 5px 0;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        input, select, button {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+        }
+        
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        
+        button:hover:not(:disabled) { background: #2980b9; }
+        button:disabled { background: #bdc3c7; cursor: not-allowed; }
+        
+        .btn-success { background: #27ae60; }
+        .btn-success:hover:not(:disabled) { background: #2ecc71; }
+        
+        .btn-danger { background: #e74c3c; }
+        .btn-danger:hover:not(:disabled) { background: #c0392b; }
+        
+        .btn-warning { background: #f39c12; }
+        .btn-warning:hover:not(:disabled) { background: #e67e22; }
+        
+        #canvas {
+            border: 2px solid #34495e;
+            border-radius: 5px;
+            background: white;
+            cursor: crosshair;
+            flex: 1;
+        }
+        
+        #canvas:focus {
+            outline: 3px solid #3498db;
+            outline-offset: 2px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .controls button {
+            flex: 1;
+            min-width: 100px;
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        
+        .status.success { background: #d4edda; color: #155724; }
+        .status.error { background: #f8d7da; color: #721c24; }
+        .status.info { background: #d1ecf1; color: #0c5460; }
+        
+        .obstacle-list {
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 5px;
+        }
+        
+        .obstacle-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px;
+            background: #f8f9fa;
+            margin: 2px 0;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+        
+        .obstacle-delete {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 2px 6px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 10px;
+        }
+        
+        .trajectory-info {
+            background: #f8f9fa;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+            display: none;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            font-size: 13px;
+        }
+        
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .info-label { font-weight: bold; color: #555; }
+        .info-value { color: #2c3e50; }
+        
+        .playback-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+            padding: 10px;
+            background: #ecf0f1;
+            border-radius: 5px;
+        }
+        
+        .playback-controls button {
+            width: auto;
+            padding: 5px 10px;
+            margin: 0;
+            font-size: 12px;
+        }
+        
+        .progress-container {
+            flex: 1;
+            margin: 0 10px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #ddd;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: #3498db;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        
+        .progress-label {
+            font-size: 10px;
+            color: #666;
+            margin-top: 2px;
+        }
+        
+        .legend {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255,255,255,0.9);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            border: 1px solid #ddd;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 3px 0;
+        }
+        
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            margin-right: 5px;
+            border-radius: 2px;
+        }
+        
+        .explanation {
+            background: #e8f4fd;
+            border: 1px solid #bee5eb;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+            display: none;
+        }
+        
+        .explanation h3 {
+            color: #0c5460;
+            margin-bottom: 10px;
+        }
+        
+        .explanation p {
+            margin: 5px 0;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+        
+        .canvas-container {
+            position: relative;
+            flex: 1;
+            min-height: 400px;
+        }
+        
+        @media (max-width: 1000px) {
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr;
+            }
+            
+            .sidebar {
+                max-height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h1>🤖 Robot Control</h1>
+            
+            <!-- Wall Creation -->
+            <div class="section">
+                <h2>1. Create Wall</h2>
+                <label for="wallName">Wall Name:</label>
+                <input type="text" id="wallName" name="wallName" value="Sample Wall 5x5m" 
+                       placeholder="Enter wall name (e.g., Living Room Wall)" 
+                       title="Enter a descriptive name for the wall" 
+                       aria-describedby="wallNameHelp">
+                
+                <label for="wallWidth">Width (meters):</label>
+                <input type="number" id="wallWidth" name="wallWidth" value="5.0" step="0.1" min="0.1" max="50"
+                       placeholder="Wall width" 
+                       title="Enter wall width in meters (0.1 to 50)"
+                       aria-describedby="wallWidthHelp">
+                
+                <label for="wallHeight">Height (meters):</label>
+                <input type="number" id="wallHeight" name="wallHeight" value="5.0" step="0.1" min="0.1" max="50"
+                       placeholder="Wall height" 
+                       title="Enter wall height in meters (0.1 to 50)"
+                       aria-describedby="wallHeightHelp">
+                
+                <button onclick="createWall()" id="createWallBtn" 
+                        title="Create a new wall with specified dimensions"
+                        aria-describedby="createWallHelp">Create Wall</button>
+            </div>
+            
+            <!-- Obstacle Addition -->
+            <div class="section">
+                <h2>2. Add Obstacles</h2>
+                <label for="obstacleName">Obstacle Name:</label>
+                <input type="text" id="obstacleName" name="obstacleName" value="Window 25x25cm" 
+                       placeholder="Enter obstacle name (e.g., Window, Door)" 
+                       title="Enter a descriptive name for the obstacle"
+                       aria-describedby="obstacleNameHelp">
+                
+                <label for="obstacleWidth">Width (meters):</label>
+                <input type="number" id="obstacleWidth" name="obstacleWidth" value="0.25" step="0.01" min="0.01"
+                       placeholder="Obstacle width" 
+                       title="Enter obstacle width in meters"
+                       aria-describedby="obstacleWidthHelp">
+                
+                <label for="obstacleHeight">Height (meters):</label>
+                <input type="number" id="obstacleHeight" name="obstacleHeight" value="0.25" step="0.01" min="0.01"
+                       placeholder="Obstacle height" 
+                       title="Enter obstacle height in meters"
+                       aria-describedby="obstacleHeightHelp">
+                
+                <label for="obstacleX">Center X (meters):</label>
+                <input type="number" id="obstacleX" name="obstacleX" value="2.5" step="0.01"
+                       placeholder="X coordinate" 
+                       title="Enter X coordinate of obstacle center (click canvas to auto-fill)"
+                       aria-describedby="obstacleXHelp">
+                
+                <label for="obstacleY">Center Y (meters):</label>
+                <input type="number" id="obstacleY" name="obstacleY" value="2.5" step="0.01"
+                       placeholder="Y coordinate" 
+                       title="Enter Y coordinate of obstacle center (click canvas to auto-fill)"
+                       aria-describedby="obstacleYHelp">
+                
+                <button onclick="addObstacle()" id="addObstacleBtn" disabled
+                        title="Add obstacle to the wall (create wall first)"
+                        aria-describedby="addObstacleHelp">Add Obstacle</button>
+                
+                <div class="obstacle-list" id="obstacleList" 
+                     aria-label="List of added obstacles" 
+                     role="list"></div>
+            </div>
+            
+            <!-- Path Planning -->
+            <div class="section">
+                <h2>3. Plan Path</h2>
+                <label for="algorithm">Algorithm:</label>
+                <select id="algorithm" name="algorithm" 
+                        title="Choose path planning algorithm"
+                        aria-describedby="algorithmHelp">
+                    <option value="boustrophedon">Boustrophedon (Back-and-forth)</option>
+                    <option value="spiral">Spiral Pattern</option>
+                    <option value="zigzag">Zigzag Pattern</option>
+                </select>
+                
+                <label for="robotWidth">Robot Width (meters):</label>
+                <input type="number" id="robotWidth" name="robotWidth" value="0.10" step="0.01" min="0.01"
+                       placeholder="Robot width" 
+                       title="Enter robot tool width in meters"
+                       aria-describedby="robotWidthHelp">
+                
+                <label for="overlap">Overlap (%):</label>
+                <input type="number" id="overlap" name="overlap" value="20" step="1" min="0" max="50"
+                       placeholder="Overlap percentage" 
+                       title="Enter overlap percentage (0-50%)"
+                       aria-describedby="overlapHelp">
+                
+                <label for="resolution">Resolution (meters):</label>
+                <input type="number" id="resolution" name="resolution" value="0.01" step="0.001" min="0.001"
+                       placeholder="Path resolution" 
+                       title="Enter path resolution in meters (smaller = more detailed)"
+                       aria-describedby="resolutionHelp">
+                
+                <button onclick="planTrajectory()" id="planBtn" class="btn-success" disabled
+                        title="Generate robot path for the wall (add obstacles first if needed)"
+                        aria-describedby="planHelp">Plan Trajectory</button>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="controls">
+                <button onclick="clearAll()" class="btn-warning"
+                        title="Clear all data including wall, obstacles, and trajectory"
+                        aria-describedby="clearHelp">Clear All</button>
+                <button onclick="exportData()" id="exportBtn" disabled
+                        title="Export trajectory data as JSON file"
+                        aria-describedby="exportHelp">Export Data</button>
+                <button onclick="showSystemInfo()"
+                        title="Show system performance information"
+                        aria-describedby="systemHelp">System Info</button>
+            </div>
+            
+            <div id="statusArea" aria-live="polite" aria-atomic="true"></div>
+            
+            <div class="canvas-container">
+                <canvas id="canvas" width="800" height="600" 
+                        role="img" 
+                        tabindex="0"
+                        aria-label="Wall finishing robot visualization canvas showing wall, obstacles, and planned trajectory"
+                        title="Interactive canvas - click to place obstacles at specific coordinates"></canvas>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #34495e; border: 1px solid #2c3e50;"></div>
+                        Wall Boundary
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #e74c3c;"></div>
+                        Obstacle
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #3498db;"></div>
+                        Planned Path
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #27ae60;"></div>
+                        Robot Position
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #f39c12;"></div>
+                        Start Point
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #9b59b6;"></div>
+                        End Point
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Path Explanation -->
+            <div id="pathExplanation" class="explanation">
+                <h3>Path Planning Explanation</h3>
+                <div id="explanationContent"></div>
+            </div>
+            
+            <!-- Trajectory Information -->
+            <div id="trajectoryInfo" class="trajectory-info">
+                <h3>📊 Trajectory Results</h3>
+                <div class="info-grid" id="infoGrid"></div>
+                
+                <div class="playback-controls">
+                    <button onclick="playTrajectory()" id="playBtn"
+                            title="Play trajectory animation"
+                            aria-describedby="playHelp">▶️ Play</button>
+                    <button onclick="pauseTrajectory()" id="pauseBtn"
+                            title="Pause trajectory animation"
+                            aria-describedby="pauseHelp">⏸️ Pause</button>
+                    <button onclick="resetTrajectory()" id="resetBtn"
+                            title="Reset trajectory to beginning"
+                            aria-describedby="resetHelp">⏹️ Reset</button>
+                    <div class="progress-container">
+                        <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <div class="progress-label" id="progressLabel">Ready to play</div>
+                    </div>
+                    <label for="speedControl">Speed:</label>
+                    <input type="range" id="speedControl" name="speedControl" min="0.5" max="5" step="0.5" value="1" 
+                           style="width: 60px; margin: 0;"
+                           title="Adjust playback speed (0.5x to 5x)"
+                           aria-describedby="speedHelp">
+                    <span id="speedLabel">1x</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Screen reader only help text -->
+    <div class="sr-only">
+        <div id="wallNameHelp">Enter a descriptive name for the wall you want to finish</div>
+        <div id="wallWidthHelp">Wall width in meters, between 0.1 and 50 meters</div>
+        <div id="wallHeightHelp">Wall height in meters, between 0.1 and 50 meters</div>
+        <div id="createWallHelp">Creates a new wall with the specified dimensions</div>
+        <div id="obstacleNameHelp">Name for the obstacle (e.g., Window, Door, Electrical outlet)</div>
+        <div id="obstacleWidthHelp">Width of the obstacle in meters</div>
+        <div id="obstacleHeightHelp">Height of the obstacle in meters</div>
+        <div id="obstacleXHelp">X coordinate of obstacle center - you can click on the canvas to auto-fill</div>
+        <div id="obstacleYHelp">Y coordinate of obstacle center - you can click on the canvas to auto-fill</div>
+        <div id="addObstacleHelp">Adds the obstacle to the current wall</div>
+        <div id="algorithmHelp">Choose the path planning algorithm - Boustrophedon is recommended for most walls</div>
+        <div id="robotWidthHelp">Width of the robot tool in meters</div>
+        <div id="overlapHelp">Percentage overlap between passes to ensure complete coverage</div>
+        <div id="resolutionHelp">Path resolution in meters - smaller values create more detailed paths</div>
+        <div id="planHelp">Generates the robot trajectory for finishing the wall</div>
+        <div id="clearHelp">Removes all data and starts over</div>
+        <div id="exportHelp">Downloads trajectory data as a JSON file</div>
+        <div id="systemHelp">Shows system performance and status information</div>
+        <div id="playHelp">Starts animated playback of the trajectory</div>
+        <div id="pauseHelp">Pauses the trajectory animation</div>
+        <div id="resetHelp">Resets the animation to the beginning</div>
+        <div id="speedHelp">Controls playback speed from 0.5x to 5x normal speed</div>
+    </div>
+
+    <script>
+        // Global variables
+        let canvas, ctx;
+        let currentWall = null;
+        let obstacles = [];
+        let trajectoryPoints = [];
+        let currentTrajectory = null;
+        let playbackInterval = null;
+        let currentPointIndex = 0;
+        let isPlaying = false;
+
+        const API_BASE = 'http://localhost:8000/api/v1';
+
+        // Initialize
+        window.onload = function() {
+            canvas = document.getElementById('canvas');
+            ctx = canvas.getContext('2d');
+            initCanvas();
+            
+            // Click handler for obstacle placement
+            canvas.addEventListener('click', function(e) {
+                if (!currentWall) return;
+                
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                const meterX = pixelsToMeters(x, currentWall.width, canvas.width);
+                const meterY = pixelsToMeters(y, currentWall.height, canvas.height);
+                
+                document.getElementById('obstacleX').value = meterX.toFixed(2);
+                document.getElementById('obstacleY').value = meterY.toFixed(2);
+                
+                showStatus('Click position: (' + meterX.toFixed(2) + ', ' + meterY.toFixed(2) + ')m', 'info');
+            });
+            
+            // Speed control
+            document.getElementById('speedControl').oninput = function() {
+                const speed = this.value;
+                document.getElementById('speedLabel').textContent = speed + 'x';
+            };
+        };
+
+        function initCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            drawGrid();
+        }
+
+        function drawGrid() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#f0f0f0';
+            ctx.lineWidth = 1;
+            
+            const gridSize = 20;
+            for (let x = 0; x < canvas.width; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            
+            for (let y = 0; y < canvas.height; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+        }
+
+        function metersToPixels(meters, wallDimension, canvasDimension) {
+            return (meters / wallDimension) * (canvasDimension - 40) + 20;
+        }
+
+        function pixelsToMeters(pixels, wallDimension, canvasDimension) {
+            return ((pixels - 20) / (canvasDimension - 40)) * wallDimension;
+        }
+
+        function drawWall() {
+            if (!currentWall) return;
+            
+            const x = 20;
+            const y = 20;
+            const width = canvas.width - 40;
+            const height = canvas.height - 40;
+            
+            // Wall background
+            ctx.fillStyle = 'rgba(236, 240, 241, 0.3)';
+            ctx.fillRect(x, y, width, height);
+            
+            // Wall border
+            ctx.strokeStyle = '#34495e';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(x, y, width, height);
+            
+            // Wall label
+            ctx.fillStyle = '#2c3e50';
+            ctx.font = 'bold 14px Arial';
+            ctx.fillText(`${currentWall.name} (${currentWall.width}×${currentWall.height}m)`, x + 10, y + 20);
+        }
+
+        function drawObstacles() {
+            obstacles.forEach(obstacle => {
+                // Handle both string and object geometry data
+                let geom;
+                if (typeof obstacle.geometry_data === 'string') {
+                    try {
+                        geom = JSON.parse(obstacle.geometry_data);
+                    } catch (e) {
+                        console.error('Failed to parse geometry data:', obstacle.geometry_data);
+                        return;
+                    }
+                } else {
+                    geom = obstacle.geometry_data;
+                }
+                
+                const centerX = metersToPixels(geom.center_x, currentWall.width, canvas.width);
+                const centerY = metersToPixels(geom.center_y, currentWall.height, canvas.height);
+                const width = metersToPixels(geom.width, currentWall.width, canvas.width) - 20;
+                const height = metersToPixels(geom.height, currentWall.height, canvas.height) - 20;
+                
+                const x = centerX - width / 2;
+                const y = centerY - height / 2;
+                
+                // Draw obstacle
+                ctx.fillStyle = '#e74c3c';
+                ctx.fillRect(x, y, width, height);
+                
+                ctx.strokeStyle = '#c0392b';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(x, y, width, height);
+                
+                // Label
+                ctx.fillStyle = 'white';
+                ctx.font = '10px Arial';
+                ctx.fillText(obstacle.name, x + 2, y + 12);
+            });
+        }
+
+        function drawTrajectory(upToIndex = -1) {
+            if (trajectoryPoints.length === 0) return;
+            
+            const maxIndex = upToIndex >= 0 ? Math.min(upToIndex, trajectoryPoints.length - 1) : trajectoryPoints.length - 1;
+            
+            // Draw path
+            ctx.strokeStyle = '#3498db';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            for (let i = 0; i <= maxIndex; i++) {
+                const point = trajectoryPoints[i];
+                const x = metersToPixels(point.x, currentWall.width, canvas.width);
+                const y = metersToPixels(point.y, currentWall.height, canvas.height);
+                
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+            
+            // Draw points
+            if (trajectoryPoints.length > 0) {
+                // Start point
+                const start = trajectoryPoints[0];
+                const startX = metersToPixels(start.x, currentWall.width, canvas.width);
+                const startY = metersToPixels(start.y, currentWall.height, canvas.height);
+                
+                ctx.fillStyle = '#f39c12';
+                ctx.beginPath();
+                ctx.arc(startX, startY, 6, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                // End point
+                const end = trajectoryPoints[trajectoryPoints.length - 1];
+                const endX = metersToPixels(end.x, currentWall.width, canvas.width);
+                const endY = metersToPixels(end.y, currentWall.height, canvas.height);
+                
+                ctx.fillStyle = '#9b59b6';
+                ctx.beginPath();
+                ctx.arc(endX, endY, 6, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+            
+            // Current position during playback
+            if (upToIndex >= 0 && upToIndex < trajectoryPoints.length) {
+                const current = trajectoryPoints[upToIndex];
+                const x = metersToPixels(current.x, currentWall.width, canvas.width);
+                const y = metersToPixels(current.y, currentWall.height, canvas.height);
+                
+                ctx.fillStyle = '#27ae60';
+                ctx.beginPath();
+                ctx.arc(x, y, 8, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                // Robot representation
+                ctx.strokeStyle = '#1e8449';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(x, y, 12, 0, 2 * Math.PI);
+                ctx.stroke();
+            }
+        }
+
+        function redrawCanvas() {
+            drawGrid();
+            drawWall();
+            drawObstacles();
+            drawTrajectory(isPlaying ? currentPointIndex : -1);
+        }
+
+        function showStatus(message, type = 'info') {
+            const statusArea = document.getElementById('statusArea');
+            const statusDiv = document.createElement('div');
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = message;
+            statusDiv.setAttribute('role', 'alert');
+            statusArea.appendChild(statusDiv);
+            
+            // Announce to screen readers
+            statusDiv.setAttribute('aria-live', 'assertive');
+            
+            setTimeout(() => statusDiv.remove(), 5000);
+        }
+
+        // Helper function to safely parse error responses
+        async function parseErrorResponse(response) {
+            try {
+                const text = await response.text();
+                try {
+                    const json = JSON.parse(text);
+                    return json.detail || json.error || json.message || 'Unknown error';
+                } catch {
+                    return text || `HTTP ${response.status}`;
+                }
+            } catch {
+                return `HTTP ${response.status}`;
+            }
+        }
+
+        // API Functions
+        async function createWall() {
+            const name = document.getElementById('wallName').value;
+            const width = parseFloat(document.getElementById('wallWidth').value);
+            const height = parseFloat(document.getElementById('wallHeight').value);
+            
+            if (!name || width <= 0 || height <= 0) {
+                showStatus('Please provide valid wall parameters', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/walls`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, width, height })
+                });
+                
+                if (response.ok) {
+                    currentWall = await response.json();
+                    obstacles = [];
+                    trajectoryPoints = [];
+                    currentTrajectory = null;
+                    
+                    document.getElementById('addObstacleBtn').disabled = false;
+                    document.getElementById('planBtn').disabled = false;
+                    
+                    updateObstacleList();
+                    redrawCanvas();
+                    showStatus(`✅ Wall "${name}" created successfully!`, 'success');
+                } else {
+                    const errorMessage = await parseErrorResponse(response);
+                    showStatus(`❌ Failed to create wall: ${errorMessage}`, 'error');
+                }
+            } catch (error) {
+                console.error('Network error:', error);
+                showStatus(`❌ Network error: ${error.message || 'Connection failed'}`, 'error');
+            }
+        }
+
+        async function addObstacle() {
+            if (!currentWall) {
+                showStatus('❌ Please create a wall first', 'error');
+                return;
+            }
+            
+            const name = document.getElementById('obstacleName').value;
+            const width = parseFloat(document.getElementById('obstacleWidth').value);
+            const height = parseFloat(document.getElementById('obstacleHeight').value);
+            const centerX = parseFloat(document.getElementById('obstacleX').value);
+            const centerY = parseFloat(document.getElementById('obstacleY').value);
+            
+            if (!name || width <= 0 || height <= 0) {
+                showStatus('❌ Please provide valid obstacle parameters', 'error');
+                return;
+            }
+            
+            // Validate bounds
+            if (centerX - width/2 < 0 || centerX + width/2 > currentWall.width ||
+                centerY - height/2 < 0 || centerY + height/2 > currentWall.height) {
+                showStatus('❌ Obstacle must be within wall boundaries', 'error');
+                return;
+            }
+            
+            const requestData = {
+                name,
+                obstacle_type: 'rectangle',
+                geometry_data: { 
+                    center_x: centerX, 
+                    center_y: centerY, 
+                    width, 
+                    height 
+                }
+            };
+            
+            console.log('Sending obstacle data:', requestData);
+            
+            try {
+                const response = await fetch(`${API_BASE}/walls/${currentWall.id}/obstacles`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response headers:', [...response.headers.entries()]);
+                
+                if (response.ok) {
+                    const obstacle = await response.json();
+                    console.log('Received obstacle:', obstacle);
+                    obstacles.push(obstacle);
+                    updateObstacleList();
+                    redrawCanvas();
+                    showStatus(`✅ Obstacle "${name}" added successfully!`, 'success');
+                    
+                    // Clear form
+                    document.getElementById('obstacleName').value = '';
+                } else {
+                    const errorMessage = await parseErrorResponse(response);
+                    console.error('API Error:', errorMessage);
+                    showStatus(`❌ Failed to add obstacle: ${errorMessage}`, 'error');
+                }
+            } catch (error) {
+                console.error('Network error details:', error);
+                showStatus(`❌ Network error: ${error.message || 'Connection failed'}`, 'error');
+            }
+        }
+
+        async function planTrajectory() {
+            if (!currentWall) {
+                showStatus('❌ Please create a wall first', 'error');
+                return;
+            }
+            
+            const algorithm = document.getElementById('algorithm').value;
+            const robotWidth = parseFloat(document.getElementById('robotWidth').value);
+            const overlap = parseFloat(document.getElementById('overlap').value);
+            const resolution = parseFloat(document.getElementById('resolution').value);
+            
+            document.getElementById('planBtn').disabled = true;
+            document.getElementById('planBtn').textContent = '🔄 Planning...';
+            
+            showStatus('🤖 Planning trajectory...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/planning/plan`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        wall_id: currentWall.id,
+                        algorithm,
+                        robot_width: robotWidth,
+                        overlap_percentage: overlap,
+                        resolution
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    currentTrajectory = result;
+                    
+                    // Get trajectory points
+                    const pointsResponse = await fetch(`${API_BASE}/trajectories/${result.trajectory_id}/points`);
+                    if (pointsResponse.ok) {
+                        trajectoryPoints = await pointsResponse.json();
+                        
+                        displayTrajectoryInfo(result);
+                        showPathExplanation(algorithm, result);
+                        redrawCanvas();
+                        document.getElementById('exportBtn').disabled = false;
+                        
+                        showStatus(`✅ Trajectory planned! ${trajectoryPoints.length} points generated`, 'success');
+                    }
+                } else {
+                    const errorMessage = await parseErrorResponse(response);
+                    showStatus(`❌ Planning failed: ${errorMessage}`, 'error');
+                }
+            } catch (error) {
+                console.error('Network error:', error);
+                showStatus(`❌ Network error: ${error.message || 'Connection failed'}`, 'error');
+            } finally {
+                document.getElementById('planBtn').disabled = false;
+                document.getElementById('planBtn').textContent = 'Plan Trajectory';
+            }
+        }
+
+        function displayTrajectoryInfo(result) {
+            const infoDiv = document.getElementById('trajectoryInfo');
+            const infoGrid = document.getElementById('infoGrid');
+            
+            const algorithm = document.getElementById('algorithm').value;
+            const algorithmNames = {
+                'boustrophedon': 'Boustrophedon (Back-and-forth)',
+                'spiral': 'Spiral Pattern',
+                'zigzag': 'Zigzag Pattern'
+            };
+            
+            infoGrid.innerHTML = `
+                <div class="info-item">
+                    <span class="info-label">Algorithm:</span>
+                    <span class="info-value">${algorithmNames[algorithm]}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Total Points:</span>
+                    <span class="info-value">${result.total_points.toLocaleString()}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Path Length:</span>
+                    <span class="info-value">${result.total_length.toFixed(2)}m</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Coverage:</span>
+                    <span class="info-value">${result.coverage_percentage.toFixed(1)}%</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Planning Time:</span>
+                    <span class="info-value">${result.execution_time_ms}ms</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Est. Duration:</span>
+                    <span class="info-value">${result.estimated_duration_minutes.toFixed(1)} min</span>
+                </div>
+            `;
+            
+            infoDiv.style.display = 'block';
+        }
+
+        function showPathExplanation(algorithm, result) {
+            const explanationDiv = document.getElementById('pathExplanation');
+            const contentDiv = document.getElementById('explanationContent');
+            
+            let explanation = '';
+            
+            switch(algorithm) {
+                case 'boustrophedon':
+                    explanation = `
+                        <p><strong>Algorithm:</strong> Boustrophedon (Back-and-forth pattern)</p>
+                        <p><strong>How it works:</strong> The robot moves in parallel lines across the wall, alternating direction (like mowing a lawn). This ensures complete coverage with minimal missed spots.</p>
+                        <p><strong>Why chosen:</strong> Best for rectangular walls with obstacles. Provides systematic coverage with predictable patterns.</p>
+                        <p><strong>Obstacles handled:</strong> Robot automatically detects obstacles and navigates around them, resuming the pattern on the other side.</p>
+                        <p><strong>Efficiency:</strong> ${result.coverage_percentage.toFixed(1)}% coverage achieved with optimal overlap to prevent missed areas.</p>
+                    `;
+                    break;
+                case 'spiral':
+                    explanation = `
+                        <p><strong>Algorithm:</strong> Spiral Pattern (Inside-out or outside-in)</p>
+                        <p><strong>How it works:</strong> The robot starts from center and spirals outward (or vice versa), creating concentric paths that cover the entire wall surface.</p>
+                        <p><strong>Why chosen:</strong> Minimizes tool lift/drop operations and creates smooth, continuous motion. Good for walls without complex obstacles.</p>
+                        <p><strong>Obstacles handled:</strong> Pattern adapts around obstacles by adjusting spiral path or creating sub-spirals.</p>
+                        <p><strong>Efficiency:</strong> ${result.coverage_percentage.toFixed(1)}% coverage with smooth, efficient motion paths.</p>
+                    `;
+                    break;
+                case 'zigzag':
+                    explanation = `
+                        <p><strong>Algorithm:</strong> Zigzag Pattern (Diagonal coverage)</p>
+                        <p><strong>How it works:</strong> Robot moves in diagonal lines across the wall, creating a zigzag pattern that provides good coverage for certain wall geometries.</p>
+                        <p><strong>Why chosen:</strong> Effective for walls with diagonal obstacles or when diagonal motion is preferred for the finishing process.</p>
+                        <p><strong>Obstacles handled:</strong> Diagonal paths are adjusted to navigate around obstacles while maintaining pattern integrity.</p>
+                        <p><strong>Efficiency:</strong> ${result.coverage_percentage.toFixed(1)}% coverage with diagonal approach minimizing direction changes.</p>
+                    `;
+                    break;
+            }
+            
+            contentDiv.innerHTML = explanation;
+            explanationDiv.style.display = 'block';
+        }
+
+        function updateObstacleList() {
+            const list = document.getElementById('obstacleList');
+            list.innerHTML = '';
+            
+            obstacles.forEach(obstacle => {
+                // Handle both string and object geometry data
+                let geom;
+                if (typeof obstacle.geometry_data === 'string') {
+                    try {
+                        geom = JSON.parse(obstacle.geometry_data);
+                    } catch (e) {
+                        console.error('Failed to parse geometry data:', obstacle.geometry_data);
+                        return;
+                    }
+                } else {
+                    geom = obstacle.geometry_data;
+                }
+                
+                const item = document.createElement('div');
+                item.className = 'obstacle-item';
+                item.setAttribute('role', 'listitem');
+                item.innerHTML = `
+                    <div>
+                        <strong>${obstacle.name}</strong><br>
+                        ${(geom.width*100).toFixed(0)}×${(geom.height*100).toFixed(0)}cm at (${geom.center_x.toFixed(1)}, ${geom.center_y.toFixed(1)})m
+                    </div>
+                    <button class="obstacle-delete" 
+                            onclick="deleteObstacle(${obstacle.id})"
+                            title="Delete ${obstacle.name} obstacle"
+                            aria-label="Delete ${obstacle.name} obstacle">×</button>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        async function deleteObstacle(obstacleId) {
+            try {
+                const response = await fetch(`${API_BASE}/walls/${currentWall.id}/obstacles/${obstacleId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    obstacles = obstacles.filter(obs => obs.id !== obstacleId);
+                    updateObstacleList();
+                    redrawCanvas();
+                    showStatus('✅ Obstacle deleted', 'success');
+                } else {
+                    const errorMessage = await parseErrorResponse(response);
+                    showStatus(`❌ Failed to delete obstacle: ${errorMessage}`, 'error');
+                }
+            } catch (error) {
+                console.error('Network error:', error);
+                showStatus(`❌ Error: ${error.message || 'Connection failed'}`, 'error');
+            }
+        }
+
+        // Playback functions
+        function playTrajectory() {
+            if (trajectoryPoints.length === 0) {
+                showStatus('❌ No trajectory to play', 'error');
+                return;
+            }
+            
+            isPlaying = true;
+            const speed = parseFloat(document.getElementById('speedControl').value);
+            const interval = Math.max(10, 50 / speed);
+            
+            playbackInterval = setInterval(() => {
+                if (currentPointIndex >= trajectoryPoints.length - 1) {
+                    pauseTrajectory();
+                    showStatus('✅ Trajectory playback completed', 'success');
+                    return;
+                }
+                
+                currentPointIndex++;
+                updateProgress();
+                redrawCanvas();
+            }, interval);
+            
+            document.getElementById('playBtn').disabled = true;
+            document.getElementById('pauseBtn').disabled = false;
+        }
+
+        function pauseTrajectory() {
+            isPlaying = false;
+            if (playbackInterval) {
+                clearInterval(playbackInterval);
+                playbackInterval = null;
+            }
+            
+            document.getElementById('playBtn').disabled = false;
+            document.getElementById('pauseBtn').disabled = true;
+        }
+
+        function resetTrajectory() {
+            pauseTrajectory();
+            currentPointIndex = 0;
+            updateProgress();
+            redrawCanvas();
+            showStatus('🔄 Trajectory reset', 'info');
+        }
+
+        function updateProgress() {
+            if (trajectoryPoints.length === 0) return;
+            
+            const progress = (currentPointIndex / (trajectoryPoints.length - 1)) * 100;
+            document.getElementById('progressFill').style.width = `${progress}%`;
+            document.getElementById('progressLabel').textContent = 
+                `${progress.toFixed(1)}% - Point ${currentPointIndex + 1}/${trajectoryPoints.length}`;
+        }
+
+        function clearAll() {
+            if (confirm('Clear all data? This will remove the wall, obstacles, and trajectory.')) {
+                currentWall = null;
+                obstacles = [];
+                trajectoryPoints = [];
+                currentTrajectory = null;
+                currentPointIndex = 0;
+                
+                pauseTrajectory();
+                
+                document.getElementById('addObstacleBtn').disabled = true;
+                document.getElementById('planBtn').disabled = true;
+                document.getElementById('exportBtn').disabled = true;
+                document.getElementById('trajectoryInfo').style.display = 'none';
+                document.getElementById('pathExplanation').style.display = 'none';
+                
+                updateObstacleList();
+                redrawCanvas();
+                showStatus('🗑️ All data cleared', 'info');
+            }
+        }
+
+        function exportData() {
+            if (!currentTrajectory || trajectoryPoints.length === 0) {
+                showStatus('❌ No data to export', 'error');
+                return;
+            }
+            
+            const exportData = {
+                wall: currentWall,
+                obstacles: obstacles,
+                trajectory: currentTrajectory,
+                points: trajectoryPoints,
+                export_date: new Date().toISOString(),
+                system_info: {
+                    algorithm: document.getElementById('algorithm').value,
+                    robot_width: document.getElementById('robotWidth').value,
+                    overlap: document.getElementById('overlap').value,
+                    resolution: document.getElementById('resolution').value
+                }
+            };
+            
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `robot_trajectory_${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showStatus('✅ Data exported successfully', 'success');
+        }
+
+        async function showSystemInfo() {
+            try {
+                const response = await fetch(`${API_BASE}/monitoring/system-status`);
+                if (response.ok) {
+                    const stats = await response.json();
+                    const info = `🖥️ SYSTEM STATUS
+                    
+CPU Usage: ${stats.system.cpu_percent.toFixed(1)}%
+Memory Usage: ${stats.system.memory.percent.toFixed(1)}%
+Disk Usage: ${stats.system.disk.percent.toFixed(1)}%
+
+Process Memory: ${(stats.process.memory_rss / 1024 / 1024).toFixed(1)} MB
+Active Threads: ${stats.process.num_threads}
+
+Status: ${stats.status.toUpperCase()}`;
+                    
+                    alert(info);
+                } else {
+                    const errorMessage = await parseErrorResponse(response);
+                    showStatus(`❌ Failed to get system info: ${errorMessage}`, 'error');
+                }
+            } catch (error) {
+                console.error('Network error:', error);
+                showStatus(`❌ Error: ${error.message || 'Connection failed'}`, 'error');
+            }
+        }
+
+        // Window resize handler
+        window.addEventListener('resize', function() {
+            setTimeout(() => {
+                initCanvas();
+                redrawCanvas();
+            }, 100);
+        });
+    </script>
+</body>
+</html>

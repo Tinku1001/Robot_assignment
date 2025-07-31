@@ -999,7 +999,7 @@
                         <p><strong>How it works:</strong> The robot moves in parallel lines across the wall, alternating direction (like mowing a lawn). This ensures complete coverage with minimal missed spots.</p>
                         <p><strong>Why chosen:</strong> Best for rectangular walls with obstacles. Provides systematic coverage with predictable patterns.</p>
                         <p><strong>Obstacles handled:</strong> Robot automatically detects obstacles and navigates around them, resuming the pattern on the other side.</p>
-                        <p><strong>Efficiency:</strong> ${result.coverage_percentage.toFixed(1)}% coverage achieved with optimal overlap to prevent missed areas.</p>
+                        
                     `;
                     break;
                 case 'spiral':
@@ -1008,7 +1008,7 @@
                         <p><strong>How it works:</strong> The robot starts from center and spirals outward (or vice versa), creating concentric paths that cover the entire wall surface.</p>
                         <p><strong>Why chosen:</strong> Minimizes tool lift/drop operations and creates smooth, continuous motion. Good for walls without complex obstacles.</p>
                         <p><strong>Obstacles handled:</strong> Pattern adapts around obstacles by adjusting spiral path or creating sub-spirals.</p>
-                        <p><strong>Efficiency:</strong> ${result.coverage_percentage.toFixed(1)}% coverage with smooth, efficient motion paths.</p>
+                      
                     `;
                     break;
                 case 'zigzag':
@@ -1017,7 +1017,7 @@
                         <p><strong>How it works:</strong> Robot moves in diagonal lines across the wall, creating a zigzag pattern that provides good coverage for certain wall geometries.</p>
                         <p><strong>Why chosen:</strong> Effective for walls with diagonal obstacles or when diagonal motion is preferred for the finishing process.</p>
                         <p><strong>Obstacles handled:</strong> Diagonal paths are adjusted to navigate around obstacles while maintaining pattern integrity.</p>
-                        <p><strong>Efficiency:</strong> ${result.coverage_percentage.toFixed(1)}% coverage with diagonal approach minimizing direction changes.</p>
+                       
                     `;
                     break;
             }
